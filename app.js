@@ -98,6 +98,29 @@ async function showHost(version) {
 function statsFor(id) {
  return (state.stats && state.stats.questions && state.stats.questions[id]) || {total:0,counts:[]};
 }
+function exportStatsCsv() {
+ if(!state.event||!state.stats)throw Error("沒有可匯出的活動資料");
+ const safe=(value)=>{
+  let text=String(value??"");
+  if(["=","+","-","@"].some(ch=>text.trimStart().startsWith(ch)))text="'"+text;
+  return '"'+text.replaceAll('"','""')+'"';
+ };
+ const rows=[["題號","題目","狀態","選項","正確答案","票數","百分比"]];
+ for(const q of state.questions){
+  const result=statsFor(q.id),total=Number(result.total||0);
+  q.options.forEach((option,i)=>{
+   const count=Number((result.counts||[])[i]||0);
+   rows.push([q.position,q.prompt,q.status,A[i]+". "+option,i===q.correct_index?"是":"否",
+    count,total?Math.round(count*10000/total)/100+"%":"0%"]);
+  });
+ }
+ const csv=String.fromCharCode(65279)+rows.map(row=>row.map(safe).join(",")).join(String.fromCharCode(13,10));
+ const link=document.createElement("a");
+ const uri=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+ link.href=uri;link.download="PulseQuiz-"+state.event.code+"-results.csv";
+ document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(uri),2000);
+}
 function eventMetrics() {
  const open=state.questions.find(q=>q.status==="open");
  const v=open?statsFor(open.id).total:0;
@@ -147,7 +170,7 @@ function showEventUI() {
  e.status==="open"?'<button class="btn danger" data-act="end-event">■ 結束活動</button>':'';
  app.innerHTML=shell('<div class="head"><div><span class="eyebrow">LIVE EVENT CONTROL</span><h1>'+esc(e.title)+'</h1>'+
  '<p>'+esc(e.description||"出題、收集作答，讓所有人一起參與。")+'</p></div><div class="actions">'+badge(e.status)+
- '<button class="btn" data-act="project">'+(state.projector?'離開投影模式':'▣ 投影模式')+'</button>'+
+ '<button class="btn" data-act="export">↓ 匯出 CSV</button><button class="btn" data-act="project">'+(state.projector?'離開投影模式':'▣ 投影模式')+'</button>'+
  '<button class="btn ghost" data-act="refresh-event">↻ 更新</button></div></div>'+
  '<div class="room-banner"><div><div class="mini-label">JOIN CODE · 加入代碼</div><div class="room-code">'+esc(e.code)+'</div>'+
  '<p class="tiny" style="color:#c4d6f1">讓參加者掃描 QR Code，或輸入代碼加入。</p><div class="actions">'+
@@ -361,6 +384,7 @@ document.addEventListener("click",e=>{
    if(!navigator.clipboard?.writeText)throw Error("瀏覽器不支援一鍵複製，請手動選取活動代碼");
    await navigator.clipboard.writeText(value);toast("已複製到剪貼簿");return;
   }
+  if(action==="export"){exportStatsCsv();toast("已匯出統計 CSV");return;}
   if(action==="project"){state.projector=!state.projector;showEventUI();return;}
   if(action==="refresh-event"){await reloadEvent();return;}
   if(action==="add-option"){
