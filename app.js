@@ -279,6 +279,7 @@ async function route() {
  if(hash.startsWith("#join=")){const code=capCode(hash.slice(6));if(!code){showHome();return;}await loadGuest(code,v);return;}
  if(hash.startsWith("#event=")){await loadEvent(hash.slice(7),v);return;}
  if(hash==="#host"){await showHost(v);return;}
+ if(hash==="#join"){showHome();el("home-code")?.focus();return;}
  showHome();
 }
 async function run(btn,job) {
@@ -330,7 +331,9 @@ document.addEventListener("submit",e=>{
     must(await db.from("evq_questions").update(payload).eq("id",state.editing).eq("status","draft").select("id").single());
    }else{
     if(state.questions.length>=100)throw Error("單場活動最多 100 題");
-    const position=state.questions.length?Math.max(...state.questions.map(q=>q.position))+1:1;
+    const used=new Set(state.questions.map(q=>q.position));
+    let position=1;while(used.has(position)&&position<=100)position++;
+    if(position>100)throw Error("活動題目位置已滿");
     must(await db.from("evq_questions").insert({...payload,event_id:state.event.id,position}).select("id").single());
    }
    toast("題目儲存成功");await reloadEvent();
@@ -423,14 +426,7 @@ document.addEventListener("click",e=>{
  });
 });
 window.addEventListener("hashchange",route);
-db.auth.onAuthStateChange((type,session)=>{
- const old=state.user?.id||null;
- state.user=session?.user||null;
- if((type==="SIGNED_IN"||type==="SIGNED_OUT")&&old!==(state.user?.id||null)&&
- (location.hash==="#host"||location.hash.startsWith("#event="))){
-   setTimeout(route,0);
- }
-});
+db.auth.onAuthStateChange((_type,session)=>{state.user=session?.user||null;});
 const init=await db.auth.getSession();
 state.user=init.data?.session?.user||null;
 route();
