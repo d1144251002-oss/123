@@ -8,6 +8,7 @@
 - 建立活動、六碼代碼、加入連結、QR Code
 - 新增／編輯未發布題目、2～6 選項、指定答案、開放或關閉題目
 - 手機免註冊作答；每個活動每個裝置的同一題只接受首次提交
+- 主持人可匯出 Excel 相容的 UTF-8 CSV 統計報表
 - 3 秒自動更新統計，參加者只看得到已公布的關閉題目結果
 - Supabase RLS 限制管理操作；參加者透過裝置 token 的 SHA-256 雜湊進行 RPC 驗證
 - 與舊系統獨立的 evq_ 資料表；不會修改既有 cp2_ 系統
@@ -18,7 +19,7 @@
 2. 推送到 main 後，`.github/workflows/pages.yml` 自動執行部署；可在 Actions 檢查。
 3. 若要註冊主持人，請至 [Supabase Dashboard](https://supabase.com/dashboard/project/mexndpdexhhqshcwyqxk/auth/url-configuration) 設定 **Site URL** 和 **Redirect URLs**，允許 `https://d1144251002-oss.github.io/123/`。已啟用信箱驗證時，註冊後須先驗證信箱。
 4. 主持人登入 → 建立活動 → 開始活動 → 建題 → 開放題目 → 分享代碼與 QR。
-5. 若設定改用其他 Supabase 專案，請依序執行 `supabase/migrations/` 裡的兩份 SQL，並修改 `app.js` 的公開 Project URL / publishable key。
+5. 若設定改用其他 Supabase 專案，請依序執行 `supabase/migrations/` 裡的三份 SQL，並修改 `app.js` 的公開 Project URL / publishable key。
 
 ## 安全與功能限制
 
